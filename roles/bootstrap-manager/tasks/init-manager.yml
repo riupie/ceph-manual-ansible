@@ -23,6 +23,7 @@
 
 - name: Enable msgr2
   shell: "ceph mon enable-msgr2"
+  when: enable_msgr2 == "yes"
 
 - name: Start and enable manager daemons
   service:

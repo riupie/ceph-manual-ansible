@@ -15,6 +15,9 @@ create_host_mapping: "yes"
 # If yes, it will install cloud-archive repository
 install_uca_repository: "yes"
 
+# Enable msgrv2 protocol for manager. Default value will enable this feature.
+enable_msgr2: "yes"
+
 public_storage_interface: ens4
 cluster_storage_interface: ens3
 public_storage_network: 10.41.41.0/24

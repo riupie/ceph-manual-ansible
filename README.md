@@ -3,7 +3,7 @@
 ```
 1. Ansible 2.9
 2. Edit group_vars/all.yml.
-
+3. Edit hosts
 ```
 
 #### QUICK START DEPLOYMENT

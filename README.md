@@ -13,32 +13,32 @@ ansible-playbook -i host site.yml
 
 #### STEP BY STEP DEPLOYMENT
 
-##### Configure NTP client, update & upgrade packages, install UCA repository (depend on group_vars/all.yml configuration)
+##### 1. Configure NTP client, update & upgrade packages, install UCA repository (depend on group_vars/all.yml configuration)
 ```bash
 ansible-playbook -i host site.yml -t predeploy
 ```
 
-##### Install and add monitor nodes
+##### 2. Install and add monitor nodes
 ```bash
 ansible-playbook -i host site.yml -t bootstrap-monitor
 ```
 
-##### Install and add manager nodes
+##### 3. Install and add manager nodes
 ```bash
 ansible-playbook -i host site.yml -t bootstrap-manager
 ```
 
-##### Install osd packages only
+##### 4. Install osd packages only
 ```bash
 ansible-playbook -i host site.yml -t bootstrap-osd
 ```
 
-##### Create OSD disk
+##### 5. Create OSD disk
 ```bash
 ansible-playbook -i host site.yml -t create-osd
 ```
 
-##### Install Ceph Dashboard
+##### 6. Install Ceph Dashboard
 ```bash
 ansible-playbook -i host site.yml -t enable-dashboard
 ```

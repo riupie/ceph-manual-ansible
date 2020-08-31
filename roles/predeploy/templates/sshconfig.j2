@@ -1,0 +1,7 @@
+{% for node in groups['osd'] %}
+Host {{ hostvars[node]['ansible_hostname'] }} 
+  Hostname {{ hostvars[node]['ansible_hostname'] }}
+  User {{ ceph_username }}
+  StrictHostKeyChecking no
+{% endfor %}
+

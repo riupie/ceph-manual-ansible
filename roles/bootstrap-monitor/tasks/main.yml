@@ -1,0 +1,4 @@
+---
+- import_tasks: init-monitor.yml
+- import_tasks: add-monitor.yml
+  tags: add-monitor

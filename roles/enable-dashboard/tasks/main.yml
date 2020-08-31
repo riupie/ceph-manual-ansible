@@ -1,0 +1,3 @@
+---
+- import_tasks: enable-dashboard.yml
+  when: enable_dashboard == "yes"

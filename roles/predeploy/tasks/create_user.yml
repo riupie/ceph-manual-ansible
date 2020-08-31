@@ -1,0 +1,49 @@
+---
+- name: create user for ceph-deploy
+  user:
+    name: "{{ ceph_username }}"
+    groups: sudo
+    append: yes
+    state: present
+    create_home: yes
+    shell: /bin/bash
+    password: "{{ ceph_password | password_hash('sha512') }}"
+- name: Create a 2048-bit SSH key for user stack in ~stack/.ssh/id_rsa
+  user:
+    name: "{{ ceph_username }}"
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+
+- name: Set {{ ceph_username }} as sudo without TTY
+  template: 
+    src: sudoers.j2
+    dest: "/etc/sudoers.d/{{ ceph_username }}"
+    validate: 'visudo -cf %s'
+    mode: 0440
+
+- name: Fetch authorized key user {{ ceph_username }}
+  become: yes
+  become_user: "{{ ceph_username }}"
+  fetch:
+    src: "/home/{{ ceph_username }}/.ssh/id_rsa.pub"
+    dest: /tmp/fetched
+    flat: yes
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Ensure the fetched key is set for user {{ ceph_username }}
+  become: yes
+  become_user: "{{ ceph_username }}"
+  copy:
+    src: /tmp/fetched
+    dest: "/home/{{ ceph_username }}/.ssh/authorized_keys"
+    mode: 0644
+
+- name: Copy certificate file
+  become: yes
+  become_user: "{{ ceph_username }}"
+  template:
+    src: sshconfig.j2
+    dest: "/home/{{ ceph_username }}/.ssh/config"
+    mode: 0644
+  when: inventory_hostname == groups['monitor'][0]

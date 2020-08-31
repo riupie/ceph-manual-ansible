@@ -1,0 +1,23 @@
+---
+- name: Install ceph-osd
+  apt:
+    name: ceph-osd
+    state: latest
+
+- name: Copy ceph configuration to osd nodes
+  become_user: "{{ ceph_username }}"
+  shell: "cat /etc/ceph/ceph.conf | ssh {{ hostvars[item]['ansible_hostname'] }} sudo tee /etc/ceph/ceph.conf"
+  with_items: "{{groups['osd']}}"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Copy bootstrap-osd keyring to osd nodes
+  become_user: "{{ ceph_username }}"
+  shell: "sudo cat /var/lib/ceph/bootstrap-osd/ceph.keyring | ssh {{ hostvars[item]['ansible_hostname'] }} sudo tee /var/lib/ceph/bootstrap-osd/ceph.keyring"
+  with_items: "{{groups['osd']}}"
+  when:
+    - inventory_hostname == groups['monitor'][0]
+
+#- name: Archive all daemon crash
+#  become_user: root
+#  shell: "ceph crash archive-all"
+#  tags: create-osd

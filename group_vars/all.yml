@@ -1,0 +1,27 @@
+ntp_pool: 0.id.pool.ntp.org
+
+cluster_name: ceph
+ceph_username: hci-adm
+ceph_password: rahasia
+ceph_dashboard_username: admin
+ceph_dashboard_password: admin@123
+
+# Enable Ceph Dashboard
+enable_dashboard: "yes"
+
+# If yes, it will generate /etc/hosts
+create_host_mapping: "yes"
+
+# If yes, it will install cloud-archive repository
+install_uca_repository: "yes"
+
+public_storage_interface: ens4
+cluster_storage_interface: ens3
+public_storage_network: 10.41.41.0/24
+cluster_storage_network: 10.40.40.0/24
+
+devices:
+  - data: "/dev/vdb"
+  - data: "/dev/vdc"
+    waldb: "/dev/vdd"
+

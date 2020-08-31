@@ -1,0 +1,61 @@
+- name: Install ceph-mon package
+  apt:
+    name: ceph-mon
+    state: latest
+  when: inventory_hostname != groups['monitor'][0]
+
+- name: Copy ceph configuration to other monitor nodes
+  become_user: "{{ ceph_username }}"
+  shell: "cat /etc/ceph/ceph.conf | ssh {{ hostvars[item]['ansible_hostname'] }} sudo tee /etc/ceph/ceph.conf"
+  with_items: "{{groups['monitor']}}"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Copy admin keyring to other monitor nodes
+  become_user: "{{ ceph_username }}"
+  shell: "cat /etc/ceph/ceph.client.admin.keyring | ssh {{ hostvars[item]['ansible_hostname'] }} sudo tee /etc/ceph/ceph.client.admin.keyring"
+  with_items: "{{groups['monitor']}}"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Check if /tmp/ceph.mon.keyring exists
+  stat:
+    path: /tmp/ceph.mon.keyring
+  register: ceph_mon
+  when: inventory_hostname != groups['monitor'][0]
+
+- name: Get monitor keyring
+  shell: "ceph auth get mon. -o /tmp/ceph.mon.keyring"
+  when:
+    - inventory_hostname != groups['monitor'][0]
+    - not ceph_mon.stat.exists
+
+- name: Change owner for ceph.mon.keyring
+  file:
+    path: /tmp/ceph.mon.keyring
+    owner: ceph
+    group: ceph
+    mode: 0644
+  when: inventory_hostname != groups['monitor'][0]
+
+- name: Check if /tmp/monmap exists
+  stat:
+    path: /tmp/monmap
+  register: ceph_monmap
+  when: inventory_hostname != groups['monitor'][0]
+
+- name: Get monitor maps
+  shell: "ceph mon getmap -o /tmp/monmap"
+  when:
+    - inventory_hostname != groups['monitor'][0]
+    - not ceph_monmap.stat.exists
+
+- name: Populate the monitor daemon(s) with monitor map and keyring
+  become_user: ceph
+  shell: "ceph-mon --mkfs -i {{ ansible_hostname }} --monmap /tmp/monmap --keyring /tmp/ceph.mon.keyring"
+  when: inventory_hostname != groups['monitor'][0]
+
+- name: Start ceph-mon service
+  service:
+    name: ceph-mon@{{ansible_hostname}}
+    state: started
+    enabled: yes
+  when: inventory_hostname != groups['monitor'][0]

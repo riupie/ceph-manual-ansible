@@ -1,0 +1,88 @@
+- name: Install ceph-mon package
+  apt:
+    name: ceph-mon
+    state: latest
+
+- name: Generate UUID
+  shell: uuidgen
+  register: uuid
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Set userdata fact
+  set_fact:
+    ceph_fsid: "{{ uuid.stdout }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ play_hosts }}"
+  run_once: yes
+
+- name: Config ceph.conf
+  template:
+    src: ceph.conf.j2
+    dest: /etc/ceph/ceph.conf
+    owner: ceph
+    mode: 0644
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Generate Keyring ceph mon
+  become: true 
+  shell:  "ceph-authtool --create-keyring /tmp/ceph.mon.keyring --gen-key -n mon. --cap mon. 'allow *'"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Generate keyring Client admin
+  shell: "ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *' --cap mgr 'allow *'"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Generate keyring bootstrap-osd
+  shell: "ceph-authtool --create-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Add generated keys to the ceph.client.admin.keyring
+  shell: "ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Add generated keys to the bootstrap-osd ceph.keyring
+  shell: "ceph-authtool /tmp/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Change owner for ceph.mon.keyring
+  file:
+    path: /tmp/ceph.mon.keyring
+    owner: ceph
+    group: ceph
+    mode: 0644
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Create monmap
+  shell: "monmaptool --create {% for node in groups['monitor'] %}--add {{ hostvars[node]['ansible_hostname'] }} {{ hostvars[node]['ansible_' ~ public_storage_interface]['ipv4']['address'] }}{% if not loop.last %} {% endif %}{% endfor %} --fsid {{ ceph_fsid }} --clobber /tmp/monmap"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Create default data directory
+  file:
+    path: "/var/lib/ceph/mon/{{cluster_name}}-{{ ansible_hostname }}"
+    state: directory
+    owner: ceph
+    group: ceph
+
+- name: Populate the monitor daemon(s) with monitor map and keyring
+  become_user: ceph
+  shell: "ceph-mon --mkfs -i {{ ansible_hostname }} --cluster {{ cluster_name }} --monmap /tmp/monmap --keyring /tmp/ceph.mon.keyring"
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Start ceph-mon service
+  service:
+    name: ceph-mon@{{ansible_hostname}}
+    state: started
+    enabled: yes
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Change Permission ceph keyring temporary
+  file:
+    path: /etc/ceph/ceph.client.admin.keyring
+    mode: 0644
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Change Permission ceph keyring temporary
+  file:
+    path: /var/lib/ceph/bootstrap-osd/ceph.keyring
+    mode: 0644
+  when: inventory_hostname == groups['monitor'][0]

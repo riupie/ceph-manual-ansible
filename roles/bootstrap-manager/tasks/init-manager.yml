@@ -1,0 +1,52 @@
+---
+- name: Install ceph-mgr package
+  apt:
+    name: ceph-mgr
+    state: latest
+
+- name: Copy ceph configuration to manager nodes
+  become_user: "{{ ceph_username }}"
+  shell: "cat /etc/ceph/ceph.conf | ssh {{ hostvars[item]['ansible_hostname'] }} sudo tee /etc/ceph/ceph.conf"
+  with_items: "{{groups['manager']}}"
+  when: inventory_hostname == groups['monitor'][0]
+  tags: mgr
+
+- name: Create default data directory
+  file:
+    path: "/var/lib/ceph/mgr/{{ cluster_name }}-{{ ansible_hostname }}"
+    state: directory
+    owner: ceph
+    group: ceph
+
+- name: Create user mgr
+  shell: "ceph auth get-or-create mgr.{{ ansible_hostname }} mon 'allow profile mgr' osd 'allow *' mds 'allow *' -o /var/lib/ceph/mgr/{{ cluster_name }}-{{ ansible_hostname }}/keyring"
+
+- name: Enable msgr2
+  shell: "ceph mon enable-msgr2"
+
+- name: Start and enable manager daemons
+  service:
+    name: "ceph-mgr@{{ ansible_hostname }}"
+    enabled: yes
+    state: restarted
+
+- name: Generate UUID
+  shell: "ceph fsid"
+  register: uuid
+  when: inventory_hostname == groups['monitor'][0]
+
+- name: Set userdata fact
+  set_fact:
+    ceph_fsid: "{{ uuid.stdout }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ play_hosts }}"
+  run_once: yes
+
+- name: Config ceph.conf
+  template:
+    src: ceph.conf.j2
+    dest: /etc/ceph/ceph.conf
+    owner: ceph
+    mode: 0644
+
+ 

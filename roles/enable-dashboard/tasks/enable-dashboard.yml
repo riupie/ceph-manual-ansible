@@ -1,0 +1,19 @@
+- name: Install Ceph Dashboard packages
+  apt:
+    name: ceph-mgr-dashboard
+    state: latest
+
+- name: Wait dashboard module to be ready
+  wait_for: timeout=10
+  delegate_to: localhost
+
+- name: Enable Ceph Dashboard
+  shell: ceph mgr module enable dashboard
+
+- name: Create Self-Signed Certificate for Ceph Dashboard
+  shell: ceph dashboard create-self-signed-cert
+
+- name: Create Ceph Dashboard admin user
+  shell: "ceph dashboard ac-user-create {{ ceph_dashboard_username }} {{ ceph_dashboard_password }} administrator"
+  when: inventory_hostname == groups['monitor'][0]
+

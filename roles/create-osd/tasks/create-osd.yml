@@ -1,0 +1,9 @@
+- name: Create OSD
+  shell: "ceph-volume lvm create --bluestore --data {{ item.data }}"
+  with_items: "{{ devices }}"
+  when: item.waldb is not defined
+
+- name: Create OSD with separate Block Wal
+  shell: "ceph-volume lvm create --bluestore --data {{ item.data }} --block.wal {{ item.waldb }}"
+  with_items: "{{ devices }}"
+  when: item.waldb is defined

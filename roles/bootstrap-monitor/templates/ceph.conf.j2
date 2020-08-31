@@ -1,0 +1,16 @@
+[global]
+  fsid = {{ ceph_fsid }}
+  mon initial members = {{ hostvars[groups['monitor'][0]]['ansible_hostname'] }}
+  
+  mon host = {{ hostvars[groups['monitor'][0]]['ansible_' ~ public_storage_interface]['ipv4']['address'] }}
+ 
+ 
+  public network = {{ public_storage_network }}
+  cluster network = {{ cluster_storage_network }}
+
+  auth_cluster_required = cephx
+  auth_service_required = cephx
+  auth_client_required = cephx
+
+  osd pool default size = 3
+  rbd default features = 1

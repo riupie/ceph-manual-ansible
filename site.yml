@@ -1,0 +1,30 @@
+- hosts: all
+  become: yes
+  roles:
+    - {role: 'predeploy', tags: 'predeploy'}
+
+- hosts: monitor
+  become: yes
+  roles:
+    - {role: 'bootstrap-monitor', tags: 'bootstrap-monitor'}
+
+- hosts: manager
+  become: yes
+  roles:
+    - {role: 'bootstrap-manager', tags: 'bootstrap-manager'}
+
+- hosts: monitor,osd
+  become: yes
+  roles:
+    - {role: 'bootstrap-osd', tags: 'bootstrap-osd'}
+
+- hosts: osd
+  serial: 1
+  become: yes
+  roles:
+    - {role: 'create-osd', tags: 'create-osd'}
+
+- hosts: manager
+  become: yes
+  roles:
+    - {role: 'enable-dashboard', tags: 'enable-dashboard'}

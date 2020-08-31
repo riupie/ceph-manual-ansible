@@ -1,30 +1,37 @@
+- import_playbook: gather-facts.yml
 - hosts: all
+  gather_facts: false
   become: yes
   roles:
     - {role: 'predeploy', tags: 'predeploy'}
 
 - hosts: monitor
+  gather_facts: false
   become: yes
   roles:
     - {role: 'bootstrap-monitor', tags: 'bootstrap-monitor'}
 
 - hosts: manager
+  gather_facts: false
   become: yes
   roles:
     - {role: 'bootstrap-manager', tags: 'bootstrap-manager'}
 
 - hosts: monitor,osd
+  gather_facts: false
   become: yes
   roles:
     - {role: 'bootstrap-osd', tags: 'bootstrap-osd'}
 
 - hosts: osd
+  gather_facts: false
   serial: 1
   become: yes
   roles:
     - {role: 'create-osd', tags: 'create-osd'}
 
 - hosts: manager
+  gather_facts: false
   become: yes
   roles:
     - {role: 'enable-dashboard', tags: 'enable-dashboard'}
